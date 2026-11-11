@@ -1,18 +1,6 @@
 imageFolder = '/home/pproom/experiments/faceSimSeqPRF/stimuli/full/';       %file location/filepath
 fName = 'face*.png';
 outFile = 'results.cvs';
-
-bgGray     = 0;                    % black background
-fixRingPx  = 12;                   % ~0.25 deg at 47 px/deg
-fixDotPx   = 9;                    % ~0.2 deg
-faceFolder = 'faces';
-faceFiles  = dir(fullfile(faceFolder, 'face*.png'));
-numFaces   = numel(faceFiles);
-numFace    = numFaces;
-faceSize   = 188;                  % 4 deg in px 
-centerX    = round(screenWpx/2);   
-centerY    = round(screenHpx/2);
-
 %% step 0 screen dimensions in degrees
 screenWmm = 587;
 screenHmm = 330;
@@ -23,8 +11,8 @@ screenHcm = screenHmm / 10;
 % Viewing Distance 
 viewingDistanceCm = 60.23; 
 %% Pixels per degree
-screenWDeg = 2 * rad2deg(atan((screenWcm/2) / viewingDistanceCm));
-screenHDeg = 2 * rad2deg(atan((screenHcm/2) / viewingDistanceCm));
+screenWDeg = 2 * rad2deg(atan(screenWcm / 2) / viewingDistanceCm);
+screenHDeg = 2 * rad2deg(atan(screenWcm / 2) / viewingDistanceCm);
 %% Pixels per degree
 pixelsPerDegX = screenWpx / screenWDeg;
 pixelsPerDegY = screenHpx / screenHDeg;
@@ -35,19 +23,16 @@ fprintf('Vertical pixels per degree: %.2f\n', pixelsPerDegY');
 % Find centre of screen
 eccentricityDeg = 4; 
 %convert eccentricity from deg to px
-eccentricityPx = viewingDistanceCm * tand(eccentricityDeg)...
+eccentricityPxExact = viewingDistanceCm * tand(eccentricityDeg)...
     *(screenWpx / screenWcm);
 % position face centers 4 degrees left and right if fixation 
-
 leftFaceX = centerX - eccentricityPx;
 rightFaceX = centerX + eccentricityPx;
-leftFaceY  = centerY;
-rightFaceY = centerY;
 % store positions for both faces
-faceX = [leftFaceX, rightFaceX];
+faceX = [leftfaceX, rightFaceX];
 faceY = [rightFaceY, rightFaceY];
 % face rectangle [left top right bottom] --> positions
-halfFacePx = faceSize /2;
+halfFacePx = facesize /2;
 faceRects = [faceX(:)-halfFacePx,...
     faceY(:)-halfFacePx, ...
     faceX(:) + halfFacePx, ...
@@ -63,38 +48,44 @@ fragmentStepPx = fragmentSize+fragmentGapPX;
 fragmentOffsetX = [0 fragmentSize 0 fragmentSize];
 fragmentOffsetY = [0 0 fragmentSize fragmentSize];
 %%% Step 1- create face crop stimuli 
-
+% Resize the face to faceSizeDeg x FaceSizeDeg (converted to pixels)
+img= faceImage;
+img= imresize(img, [faceSize faceSize]);
+% Shave off the first pixel row/column if the size is odd, so that the
+% image can be split into two equal halves. 
+if mod(size(img,1), 2) == 1, img=img(2:end, :, :); end
+if mod(size(img,2), 2) == 1, img(:, 2:end,:); end 
+faceImage= img;
+faceSize = 188;
 halfFace = faceSize/2;
 %Store the face and cropped fragments
-completeFaces = cell(numFaces,1);
-faceFragments = cell(numFaces, 4);
-for i = 1:numFaces
-    % Read original face image
+completeFaces= cell(numFaces,1);
+faceFragments = cell (numFace, 4);
+for i= 1: numFaces
+    %Read original face image
     faceImage = imread(fullfile(faceFolder, faceFiles(i).name));
     % Convert RGB images to grayscale
-    if size(faceImage, 3) == 3
+    if size (faceImage, 3) == 3
         faceImage = rgb2gray(faceImage);
     end
-
-    % Resize image to faceSize x faceSize px
-    faceImage = imresize(faceImage, [faceSize faceSize]);
-
-    % Store the complete face and its four equal-sized fragments
-    completeFaces{i} = faceImage;
-    faceFragments{i,1} = faceImage(1:halfFace,          1:halfFace,          :);  % TL
-    faceFragments{i,2} = faceImage(1:halfFace,          halfFace+1:faceSize, :);  % TR
-    faceFragments{i,3} = faceImage(halfFace+1:faceSize, 1:halfFace,          :);  % BL
-    faceFragments{i,4} = faceImage(halfFace+1:faceSize, halfFace+1:faceSize, :);  % BR
 end
+    %Resize image to 188x188 px
+faceImage = impresize (faceImage, [faceSize faceSize]);
+% Store the complete face and its four equal-sized fragments
+completeFaces {i} = faceImage;
+faceFragments{i,1} = faceImage(1:halfFace, 1:halfFace, :);
+faceFragment{i,2} = faceImage(1:halfFace, 1:halfFace+1:faceSize, :);
+faceFragment{i,3} = faceImage(halfFace+1:faceSize, 1:faceSize,:);
+faceFragments{i,4} = faceImage(halfFace+1:faceSize, halfFace+1:faceSize, :);
 % Fixation point 
 W=screenWpx;
 H= screenHpx;
 cx= round(W/2);
-cy= round (H/2);
+cy= orund (H/2);
 blankNoFix = repmat(uint8(bgGray), H, W, 3);
 [X, Y]= meshgrid(1:W, 1:H);
 R2 = (X-cx).^2 + (Y-cy).^2;
-ringOuter = R2 <= (fixRingPx/2)^2;
+ringhOuter = R2 <= (fixRingPx/2)^2;
 ringInner=R2 <= (fixRingPx/2-1.5)^2;
 dot = R2 <= (fixDotPx/2)^2;
 blankFix=blankNoFix;
@@ -104,244 +95,4 @@ for c=1:3
     ch(ringInner)=0;
     ch(dot) = 128;
     blankFix(:,:,c) = ch;
-end
-
-%% ===================================================================
-%% =====  EXPERIMENT PARAMETERS ================================
-%% ===================================================================
-fragmentSec     = 0.5;       % duration of each fragment (placeholder)
-blankSec        = 0.5;       % black screen after each fragment (placeholder)
-gridSec         = 0.5;       % duration of the 4-fragment grid (placeholder)
-faceLocation    = 'center';  % 'center', 'left', 'right', 'random'
-randomFragOrder = true;
-nRepeats        = 1;
-shuffleFaces    = true;
-showFixation    = true;
-outFile   = 'results_grid.csv';
-
-%% =====  BRIDGE (maps variable names to the trial code) =====
-eccPx   = round(eccentricityPxExact);
-halfGap = fragmentGapPX / 2;
-fh = faceSize;  fw = faceSize;
-hh = halfFace;  wh = halfFace;
-fragNames = {'TL','TR','BL','BR'};
-stim = struct('name',{}, 'face',{}, 'fragments',{});
-for i = 1:numFaces
-    stim(i).name      = faceFiles(i).name;
-    stim(i).face      = repmat(completeFaces{i}, 1, 1, 3 / size(completeFaces{i},3));
-    stim(i).fragments = cellfun(@(f) repmat(f,1,1,3/size(f,3)), faceFragments(i,:), ...
-                                'UniformOutput', false);
-end
-nFaces = numel(stim);
-assert(nFaces >= 2, 'Need at least 2 faces.');
-if showFixation, blank = blankFix; else, blank = blankNoFix; end
-
-%% =====  TRIAL ORDER =====
-targets = repmat(1:nFaces, 1, nRepeats);
-if shuffleFaces, targets = targets(randperm(numel(targets))); end
-nTrials = numel(targets);
-
-%% =====  FIGURE SETUP =====
-fig = figure('Color','k', 'MenuBar','none', 'ToolBar','none', ...
-             'NumberTitle','off', 'WindowState','fullscreen', ...
-             'KeyPressFcn',@onKey);
-ax   = axes('Parent',fig, 'Position',[0 0 1 1]);
-hImg = imshow(blank, 'Parent',ax, 'Border','tight');
-set(ax, 'Position',[0 0 1 1]);
-
-txt = uicontrol(fig, 'Style','text', 'Units','normalized', ...
-                'Position',[0.05 0.85 0.90 0.08], 'FontSize',28, ...
-                'BackgroundColor','k', 'ForegroundColor','w', 'String','');
-
-%% =====  INSTRUCTIONS =====
-txt.Position = [0.1 0.35 0.8 0.3];
-txt.String = ['You will see four parts of a face, one at a time. ' ...
-              'Then choose which face you saw: LEFT or RIGHT arrow. ' ...
-              'Keep your eyes on the central circle. Press any key to start.'];
-drawnow;
-waitForKey(fig, {});
-txt.Position = [0.05 0.85 0.90 0.08];
-txt.String = '';
-set(hImg, 'CData', blank);  drawnow;
-pause(1);
-
-%% ===== RUN TRIALS =====
-% SEQ random
-results = struct('trial',{}, 'target',{}, 'foil',{}, 'fragOrder',{}, 'faceLoc',{}, ...
-                 'targetSide',{}, 'response',{}, 'correct',{}, 'rt',{});
-key = '';
-
-for t = 1:nTrials
-    target = targets(t);
-    others = setdiff(1:nFaces, target);
-    foil   = others(randi(numel(others)));
-    if rand < 0.5, targetSide = 'left'; else, targetSide = 'right'; end
-
-    if strcmp(faceLocation,'random')
-        locs = {'left','right'};  locNow = locs{randi(2)};
-    else
-        locNow = faceLocation;
-    end
-    switch locNow
-        case 'left',   fcx = cx - eccPx;
-        case 'right',  fcx = cx + eccPx;
-        case 'center', fcx = cx;
-    end
-
-    if randomFragOrder, order = randperm(4); else, order = 1:4; end
-
-    for i = 1:4
-        q = order(i);
-        isBottom = q >= 3;
-        isRight  = mod(q,2) == 0;
-        if isBottom, r0 = cy + halfGap;  else, r0 = cy - hh - halfGap; end
-        if isRight,  c0 = fcx + halfGap; else, c0 = fcx - wh - halfGap; end
-
-        frame = blank;
-        frame(r0+1:r0+hh, c0+1:c0+wh, :) = stim(target).fragments{q};
-        set(hImg, 'CData', frame);  drawnow;
-        pause(fragmentSec);
-
-        set(hImg, 'CData', blank);  drawnow;
-        pause(blankSec);
-    end
-
-    frame = blankNoFix;
-    if strcmp(targetSide,'left')
-        faceL = stim(target).face;  faceR = stim(foil).face;
-    else
-        faceL = stim(foil).face;    faceR = stim(target).face;
-    end
-    rTop = cy - fh/2;
-    frame(rTop+1:rTop+fh, cx-eccPx-fw/2+1 : cx-eccPx+fw/2, :) = faceL;
-    frame(rTop+1:rTop+fh, cx+eccPx-fw/2+1 : cx+eccPx+fw/2, :) = faceR;
-    set(hImg, 'CData', frame);
-    txt.String = 'What face did you just see?   (left arrow / right arrow)';
-    drawnow;
-
-    [key, rt] = waitForKey(fig, {'leftarrow','rightarrow','escape'});
-    if strcmp(key,'escape') || ~isvalid(fig), break; end
-
-    response = erase(key, 'arrow');
-    results(end+1) = struct('trial',t, 'target',stim(target).name, ...
-        'foil',stim(foil).name, 'fragOrder',strjoin(fragNames(order),'-'), ...
-        'faceLoc',locNow, 'targetSide',targetSide, 'response',response, ...
-        'correct',strcmp(response,targetSide), 'rt',rt); %#ok<SAGROW>
-
-    txt.String = '';
-    set(hImg, 'CData', blank);  drawnow;
-    pause(0.5);
-end
-
-%% ===== BLOCK 2: SIM GRID  =====
-results2 = struct('trial',{}, 'target',{}, 'foil',{}, 'faceLoc',{}, ...
-                  'targetSide',{}, 'response',{}, 'correct',{}, 'rt',{});
-
-if isvalid(fig) && ~strcmp(key,'escape')
-
-    txt.Position = [0.1 0.35 0.8 0.3];
-    txt.String = ['Now you will see all four parts of a face together. ' ...
-                  'Then choose which face you saw: LEFT or RIGHT arrow. ' ...
-                  'Keep your eyes on the central circle. Press any key to start.'];
-    set(hImg, 'CData', blank);  drawnow;
-    waitForKey(fig, {});
-    txt.Position = [0.05 0.85 0.90 0.08];
-    txt.String = '';
-    set(hImg, 'CData', blank);  drawnow;
-    pause(1);
-
-    targets2 = repmat(1:nFaces, 1, nRepeats);
-    if shuffleFaces, targets2 = targets2(randperm(numel(targets2))); end
-
-    for t = 1:numel(targets2)
-        target = targets2(t);
-        others = setdiff(1:nFaces, target);
-        foil   = others(randi(numel(others)));
-        if rand < 0.5, targetSide = 'left'; else, targetSide = 'right'; end
-
-        if strcmp(faceLocation,'random')
-            locs = {'left','right'};  locNow = locs{randi(2)};
-        else
-            locNow = faceLocation;
-        end
-        switch locNow
-            case 'left',   fcx = cx - eccPx;
-            case 'right',  fcx = cx + eccPx;
-            case 'center', fcx = cx;
-        end
-
-        frame = blank;
-        for q = 1:4
-            isBottom = q >= 3;
-            isRight  = mod(q,2) == 0;
-            if isBottom, r0 = cy + halfGap;  else, r0 = cy - hh - halfGap; end
-            if isRight,  c0 = fcx + halfGap; else, c0 = fcx - wh - halfGap; end
-            frame(r0+1:r0+hh, c0+1:c0+wh, :) = stim(target).fragments{q};
-        end
-        set(hImg, 'CData', frame);  drawnow;
-        pause(gridSec);
-
-        set(hImg, 'CData', blank);  drawnow;
-        pause(blankSec);
-
-        frame = blankNoFix;
-        if strcmp(targetSide,'left')
-            faceL = stim(target).face;  faceR = stim(foil).face;
-        else
-            faceL = stim(foil).face;    faceR = stim(target).face;
-        end
-        rTop = cy - fh/2;
-        frame(rTop+1:rTop+fh, cx-eccPx-fw/2+1 : cx-eccPx+fw/2, :) = faceL;
-        frame(rTop+1:rTop+fh, cx+eccPx-fw/2+1 : cx+eccPx+fw/2, :) = faceR;
-        set(hImg, 'CData', frame);
-        txt.String = 'What face did you just see?   (left arrow / right arrow)';
-        drawnow;
-
-        [key, rt] = waitForKey(fig, {'leftarrow','rightarrow','escape'});
-        if strcmp(key,'escape') || ~isvalid(fig), break; end
-
-        response = erase(key, 'arrow');
-        results2(end+1) = struct('trial',t, 'target',stim(target).name, ...
-            'foil',stim(foil).name, 'faceLoc',locNow, 'targetSide',targetSide, ...
-            'response',response, 'correct',strcmp(response,targetSide), ...
-            'rt',rt); %#ok<SAGROW>
-
-        txt.String = '';
-        set(hImg, 'CData', blank);  drawnow;
-        pause(0.5);
-    end
-end
-
-%% ===== SAVE & REPORT =====
-if isvalid(fig), close(fig); end
-if ~isempty(results)
-    T = struct2table(results);
-    writetable(T, outFile);
-    fprintf('Sequential block accuracy: %.1f%% (%d trials). Saved to %s\n', ...
-            100*mean(T.correct), height(T), outFile);
-end
-if ~isempty(results2)
-    T2 = struct2table(results2);
-    writetable(T2, outFileGrid);
-    fprintf('Grid block accuracy: %.1f%% (%d trials). Saved to %s\n', ...
-            100*mean(T2.correct), height(T2), outFileGrid);
-end
-
-%% ===== LOCAL FUNCTIONS =====
-function onKey(src, evt)
-    setappdata(src, 'key', evt.Key);
-    uiresume(src);
-end
-
-function [key, rt] = waitForKey(fig, allowed)
-    setappdata(fig, 'key', '');
-    tStart = tic;
-    while true
-        uiwait(fig);
-        if ~isvalid(fig), key = 'escape'; rt = NaN; return; end
-        k = getappdata(fig, 'key');
-        if isempty(allowed) || ismember(k, allowed)
-            key = k;  rt = toc(tStart);  return
-        end
-    end
 end
