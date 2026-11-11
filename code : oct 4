@@ -11,8 +11,8 @@ screenHcm = screenHmm / 10;
 % Viewing Distance 
 viewingDistanceCm = 60.23; 
 %% Pixels per degree
-screenWDeg = 2 * rad2deg(atan(screenWcm / 2) / viewingDistanceCm);
-screenHDeg = 2 * rad2deg(atan(screenWcm / 2) / viewingDistanceCm);
+screenWDeg = 2 * rad2deg(atan((screenWcm/2) / viewingDistanceCm));
+screenHDeg = 2 * rad2deg(atan((screenHcm/2) / viewingDistanceCm));
 %% Pixels per degree
 pixelsPerDegX = screenWpx / screenWDeg;
 pixelsPerDegY = screenHpx / screenHDeg;
@@ -29,10 +29,10 @@ eccentricityPxExact = viewingDistanceCm * tand(eccentricityDeg)...
 leftFaceX = centerX - eccentricityPx;
 rightFaceX = centerX + eccentricityPx;
 % store positions for both faces
-faceX = [leftfaceX, rightFaceX];
+faceX = [leftFaceX, rightFaceX];
 faceY = [rightFaceY, rightFaceY];
 % face rectangle [left top right bottom] --> positions
-halfFacePx = facesize /2;
+halfFacePx = faceSize/2;
 faceRects = [faceX(:)-halfFacePx,...
     faceY(:)-halfFacePx, ...
     faceX(:) + halfFacePx, ...
@@ -70,7 +70,7 @@ for i= 1: numFaces
     end
 end
     %Resize image to 188x188 px
-faceImage = impresize (faceImage, [faceSize faceSize]);
+faceImage = imresize (faceImage, [faceSize faceSize]);
 % Store the complete face and its four equal-sized fragments
 completeFaces {i} = faceImage;
 faceFragments{i,1} = faceImage(1:halfFace, 1:halfFace, :);
@@ -81,7 +81,7 @@ faceFragments{i,4} = faceImage(halfFace+1:faceSize, halfFace+1:faceSize, :);
 W=screenWpx;
 H= screenHpx;
 cx= round(W/2);
-cy= orund (H/2);
+cy= round (H/2);
 blankNoFix = repmat(uint8(bgGray), H, W, 3);
 [X, Y]= meshgrid(1:W, 1:H);
 R2 = (X-cx).^2 + (Y-cy).^2;
