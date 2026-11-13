@@ -1,0 +1,86 @@
+
+imageFolder = '/home/pproom/experiments/faceSimSeqPRF/stimuli/full/';       %file location/filepath
+fName = 'face*.png';
+outFile = 'results.cvs';
+
+
+
+%step 0
+screenWcm= 64.77;
+screenHcm= 38.1;
+screenWpx= 2560;
+screenHpx= 1440;
+viewingDist= 88.9;
+
+display_sz_cm = [screenWpx, screenHcm];
+display_sz_pix = [screenWpx, screenHpx];
+display_dist_cm = viewingDist;
+target_eccentricity = 4;
+
+                                           %horizontal px per deg
+    pixelsPerDegX = get_pixperdeg(display_sz_cm(1),...
+        display_sz_pix(1), display_dist_cm, target_eccentricity);
+        
+                                           % vertical px per deg
+         pixelPerDegY = get_pixperdeg(display_sz_cm(2),...
+           display_sz_pix(2), display_dist_cm, target_eccentricity);
+
+
+         %find all face images
+         d = dir(fullfile(imageFolder, fname));
+         numberOfFaces = numel (d);
+        
+
+
+%step 1 spatial layout
+
+
+
+faceWidthDeg = 4;                    %face size in  degrees of visual angle
+faceHeightDeg = 4;
+
+faceWidthPx = round(faceWidthDeg * pixelsPerDegX);                          %convert from deg to px          
+faceHeightPx = round(faceHeightDeg * pixelsPerDegY);
+
+
+resizedFaces = cell(numberOfFaces, 1);                                      %stores resized faces & the fragments into cell
+faceFragments = cell(numberOfFaces, 4);
+
+
+
+for i = 1:numberOfFaces                                                        % using for loop to go through each image and store it in a cell to resize to 272x272
+
+    faceImage = imread(fullfile(d(i).folder, d(i).name));       %read face images
+
+    resizedFace = imresize(faceImage, [faceHeightPx, faceWidthPx]);         %resize the faces
+
+    pixelsToShave = (faceWidthPx - faceHeightPx) / 2;                        %calculates px to shave off(4 from each side)
+
+    resizedFace = resizedFace(:, pixelsToShave+1:end-pixelsToShave, :);      %shaves equally from left and right sides
+
+    resizedFaces{i} = resizedFace;                %stores squared faces
+
+
+    halfSize = size(resizedFace, 1) / 2;          %divides into four equal fragments
+
+
+
+    faceFragments{i,1} = resizedFace(1:halfSize, 1:halfSize, :);                                %top left
+    faceFragments{i,2} = resizedFace(1:halfSize, halfSize+1:end, :);                            %top right
+    faceFragments{i,3} = resizedFace(halfSize+1:end, 1:halfSize, :);                            %bottom left
+    faceFragments{i,4} = resizedFace(halfSize+1:end, halfSize+1:end, :);                        %bottom right
+
+end
+
+
+% step 2    spatial layout 
+
+screenCenterX=display_sz_pix (1)/2;
+screenCenterY=display_sz_pix (2)/2;
+faceX = screenCenterX;
+faceY= screenCenterY;
+
+
+
+
+
