@@ -1,0 +1,29 @@
+% STEP 3 - SEQUENTIAL GRID CONDITION
+
+% The fragments are presented in their original spatial order:
+% 1 = top left
+% 2 = top right
+% 3 = bottom left
+% 4 = bottom right
+seqFragmentOrder = [1 2 3 4];
+
+
+% Each fragment is presented for 200 milliseconds.
+% MATLAB timing is written in seconds, so 200 ms = 0.200 seconds.
+fragmentDuration = 0.200;
+
+
+% Go through the four fragments one at a time.
+for sequencePosition = 1:4
+
+    % Find which fragment should be presented at this point
+    % in the sequence.
+    fragmentNumber = seqFragmentOrder(sequencePosition);
+
+    % Retrieve that fragment from the stored face fragments.
+    %
+    % faceFragments{faceID, fragmentNumber}
+    % faceID tells MATLAB which face identity we are using.
+    % fragmentNumber tells MATLAB which of its four fragments to retrieve.
+
+end
