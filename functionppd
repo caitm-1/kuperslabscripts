@@ -1,7 +1,7 @@
 
 imageFolder = '/home/pproom/experiments/faceSimSeqPRF/stimuli/full/';       %file location/filepath
 fName = 'face*.png';
-outFile = 'results.cvs';
+outFile = 'results.csv';
 
 
 
@@ -22,12 +22,12 @@ target_eccentricity = 4;
         display_sz_pix(1), display_dist_cm, target_eccentricity);
         
                                            % vertical px per deg
-         pixelPerDegY = get_pixperdeg(display_sz_cm(2),...
+         pixelsPerDegY = get_pixperdeg(display_sz_cm(2),...
            display_sz_pix(2), display_dist_cm, target_eccentricity);
 
 
          %find all face images
-         d = dir(fullfile(imageFolder, fname));
+         d = dir(fullfile(imageFolder, fName));
          numberOfFaces = numel (d);
         
 
@@ -64,10 +64,10 @@ for i = 1:numberOfFaces                                                        %
     
 
 
-    faceFragments{i,1} = resizedFace(1:halfSize, 1:halfSize, :);                                %top left
-    faceFragments{i,2} = resizedFace(1:halfSize, halfSize+1:end, :);                            %top right
-    faceFragments{i,3} = resizedFace(halfSize+1:end, 1:halfSize, :);                            %bottom left
-    faceFragments{i,4} = resizedFace(halfSize+1:end, halfSize+1:end, :);                        %bottom right
+    faceFragments{i,1} = resizedFace(1:halfHeight, 1:halfWidth, :);                                %top left
+    faceFragments{i,2} = resizedFace(1:halfHeight, halfWidth+1:end, :);                            %top right
+    faceFragments{i,3} = resizedFace(halfHeight+1:end, 1:halfWidth, :);                            %bottom left
+    faceFragments{i,4} = resizedFace(halfHeight+1:end, halfWidth+1:end, :);                        %bottom right
 
 end
 
