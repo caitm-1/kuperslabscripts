@@ -12,7 +12,7 @@ screenWpx= 2560;
 screenHpx= 1440;
 viewingDist= 88.9;
 
-display_sz_cm = [screenWpx, screenHcm];
+display_sz_cm = [screenWcm, screenHcm];
 display_sz_pix = [screenWpx, screenHpx];
 display_dist_cm = viewingDist;
 target_eccentricity = 4;
@@ -54,15 +54,14 @@ for i = 1:numberOfFaces                                                        %
 
     resizedFace = imresize(faceImage, [faceHeightPx, faceWidthPx]);         %resize the faces
 
-    pixelsToShave = (faceWidthPx - faceHeightPx) / 2;                        %calculates px to shave off(4 from each side)
 
-    resizedFace = resizedFace(:, pixelsToShave+1:end-pixelsToShave, :);      %shaves equally from left and right sides
 
     resizedFaces{i} = resizedFace;                %stores squared faces
 
 
-    halfSize = size(resizedFace, 1) / 2;          %divides into four equal fragments
-
+    halfHeight = floor(size(resizedFace, 1) /2);
+    halfWidth = floor(size(resizedFace, 2) /2);
+    
 
 
     faceFragments{i,1} = resizedFace(1:halfSize, 1:halfSize, :);                                %top left
