@@ -1,3 +1,13 @@
+
+
+clear;
+clc;
+%PsychDefaultSetup(2);
+
+if exist('Screen', 'file') == 0
+    addpath(genpath('/home/pproom/software/toolboxes/Psychtoolbox-3'));
+end
+
 imageFolder = '/home/pproom/experiments/faceSimSeqPRF/stimuli/views/';       %file location/filepath
 fName = 'face*.png';
 outFile = 'results.csv';
@@ -147,14 +157,16 @@ screenCenterY=display_sz_pix (2)/2;
 
   %Step 5 --> initialize vpixx display
                  
-  PsychDefaultSetup(2);                      %initialize psychtoolbox
-  
+  %PsychDefaultSetup(2);                      %initialize psychtoolbox
+  %%%%skip test for now bc issue w flips
+  Screen('Preference', 'SkipSyncTests', 1);
+
   screenNumber = 1;               %select the vpixx monitor
   
   backgroundColour = 127;           %set background grey
 
 try
-  [window, windowRect] = PsychImaging('OpenWindow', ...                     %open window on vpixx
+  [window, windowRect] = Screen('OpenWindow', ...                     %open window on vpixx
                          screenNumber, backgroundColour);
 
 
@@ -410,3 +422,4 @@ catch ME
     fprintf('Experiment stopped: %s\n', ME.message);
     rethrow(ME)
 end
+
