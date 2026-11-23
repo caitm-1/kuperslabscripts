@@ -1,0 +1,412 @@
+imageFolder = '/home/pproom/experiments/faceSimSeqPRF/stimuli/views/';       %file location/filepath
+fName = 'face*.png';
+outFile = 'results.csv';
+
+
+
+%step 0
+screenWcm= 64.77;
+screenHcm= 38.1;
+screenWpx= 2560;
+screenHpx= 1440;
+viewingDist= 88.9;
+
+display_sz_cm = [screenWcm, screenHcm];
+display_sz_pix = [screenWpx, screenHpx];
+display_dist_cm = viewingDist;
+target_eccentricity = 4;
+
+%horizontal px per deg
+pixelsPerDegX = get_pixperdeg(display_sz_cm(1),...
+    display_sz_pix(1), display_dist_cm, target_eccentricity);
+
+% vertical px per deg
+pixelsPerDegY = get_pixperdeg(display_sz_cm(2),...
+    display_sz_pix(2), display_dist_cm, target_eccentricity);
+
+
+%find all face images
+d = dir(fullfile(imageFolder, fName));
+numberOfFaces = numel (d);
+
+
+
+%step 1 spatial layout
+
+
+
+faceWidthDeg = 4;                    %face size in  degrees of visual angle
+faceHeightDeg = 4;
+
+faceWidthPx = round(faceWidthDeg * pixelsPerDegX);                          %convert from deg to px          
+faceHeightPx = round(faceHeightDeg * pixelsPerDegY);
+
+
+resizedFaces = cell(numberOfFaces, 1);                                      %stores resized faces & the fragments into cell
+faceFragments = cell(numberOfFaces, 4);
+
+
+
+for i = 1:numberOfFaces                                                        % using for loop to go through each image and store it in a cell to resize to 272x272
+
+    faceImage = imread(fullfile(d(i).folder, d(i).name));       %read face images
+
+    resizedFace = imresize(faceImage, [faceHeightPx, faceWidthPx]);         %resize the faces
+
+
+
+    resizedFaces{i} = resizedFace;                %stores squared faces
+
+
+    halfHeight = floor(size(resizedFace, 1) /2);
+    halfWidth = floor(size(resizedFace, 2) /2);
+
+
+
+    faceFragments{i,1} = resizedFace(1:halfHeight, 1:halfWidth, :);                                %top left
+    faceFragments{i,2} = resizedFace(1:halfHeight, halfWidth+1:end, :);                            %top right
+    faceFragments{i,3} = resizedFace(halfHeight+1:end, 1:halfWidth, :);                            %bottom left
+    faceFragments{i,4} = resizedFace(halfHeight+1:end, halfWidth+1:end, :);                        %bottom right
+
+end
+
+
+% step 2    spatial layout -CAITLYN added from here on...
+
+screenCenterX=display_sz_pix (1)/2;
+screenCenterY=display_sz_pix (2)/2;
+
+                                               
+      eccentricityPx = round(target_eccentricity * pixelsPerDegX);         % convert 4 degrees eccentricity into pix
+
+ leftFaceX = screenCenterX - eccentricityPx;                                  %position the two faces horizontally from fixation
+ rightFaceX = screenCenterX + eccentricityPx;
+
+
+ leftFaceY = screenCenterY;
+ rightFaceY = screenCenterY;       %keeps faces vertically center
+
+
+ % Step 3 - SIM GRID position 
+
+ fragmentOffsetX = faceWidthPx / 4;                                        %calc horizontal and vertical offsets, from each face centre to each fragment centre                              
+ fragmentOffsetY = faceHeightPx / 4;
+
+
+                               %Left face -> four fragment centre positions
+           leftGridX = [leftFaceX - fragmentOffsetX, ...
+                        leftFaceX + fragmentOffsetX, ...
+                        leftFaceX - fragmentOffsetX,...
+                        leftFaceX + fragmentOffsetX];
+
+           leftGridY = [leftFaceY - fragmentOffsetY, ...
+               leftFaceY + fragmentOffsetY, ...
+               leftFaceY - fragmentOffsetY,...
+               leftFaceY + fragmentOffsetY];
+
+                              %Right face -> four fragment centre positions
+             rightGridX = [rightFaceX - fragmentOffsetX, ...
+             rightFaceX + fragmentOffsetX, ...
+             rightFaceX - fragmentOffsetX,...
+             rightFaceX + fragmentOffsetX];
+
+             rightGridY = [rightFaceY - fragmentOffsetY, ...
+             rightFaceY + fragmentOffsetY, ...
+             rightFaceY - fragmentOffsetY,...
+             rightFaceY + fragmentOffsetY];
+
+
+
+  %Step 4-> SIM GRID rectangles
+                                
+
+
+                                %store the destination rectangles for all four fragments of left and right faces
+       
+  leftGridRects = zeros(4, 4);
+  rightGridRects = zeros(4, 4);
+
+  for j = 1:4
+                        %get actual size of fragment j
+     fragmentHeight = size(faceFragments{1,j},1);
+     fragmentWidth = size(faceFragments{1,j}, 2);
+
+                        %create a rectangle using the fragment dimensions
+     fragmentRect = [0, 0, fragmentWidth, fragmentHeight];
+                          
+                        %centre fragment j at its left face grid position
+     leftGridRects(j,:) = CenterRectOnPointd( ...
+                          fragmentRect, leftGridX(j), leftGridY(j));
+
+                        %centre fragment j at its right face grid position
+     rightGridRects(j,:) = CenterRectOnPointd( ...
+                           fragmentRect, rightGridX(j), rightGridY(j));
+
+  end
+
+
+  %Step 5 --> initialize vpixx display
+                 
+  PsychDefaultSetup(2);                      %initialize psychtoolbox
+  
+  screenNumber = 1;               %select the vpixx monitor
+  
+  backgroundColour = 127;           %set background grey
+
+try
+  [window, windowRect] = PsychImaging('OpenWindow', ...                     %open window on vpixx
+                         screenNumber, backgroundColour);
+
+
+  ifi = Screen('GetFlipInterval', window);                  %measure the monitor refresh interval
+
+
+
+  actualWidth = RectWidth(windowRect); 
+  actualHeight = RectHeight(windowRect);                                    %check the active display resolution
+
+
+  fprintf('Vpixx resolution: %d x %d\n', ...
+           actualWidth, actualHeight);
+
+
+%%%%%%%%%%%%% General experiment instructions
+
+KbName('UnifyKeyNames');
+
+milliKeyIndex = 11;
+
+leftKey = KbName('1!');
+rightKey = KbName('2@');
+
+generalInstructions = [...
+    'In this experiment, you will complete four face recognition blocks.\n\n'...
+    'There are two presentation types: SIMULTANEOUS and SEQUENTIAL.\n\n'...
+    'Each presentation type has two conditions: GRID and RANDOMIZED. \n\n ...' ...
+    'In each trial, you will study two fragmented faces. \n\n'...
+    'After, two complete faces will appear.\n' ...
+    'One face was shown before and one face is new. \n\n' ...
+    'Choose the face you saw before.\n\n'...
+    'Press either left or right buttons to continue'];
+DrawFormattedText(window, generalInstructions, ...
+    'center', 'center', 255);
+
+Screen('Flip', window);
+
+KbReleaseWait(milliKeyIndex);
+
+while true
+    [keyIsDown, ~, keyCode] = KbCheck(milliKeyIndex);
+
+    if keyIsDown && (keyCode(leftKey) || keyCode(rightKey))
+        break;
+    end
+
+    WaitSecs(0.001);
+end
+
+KbReleaseWait(milliKeyIndex);
+
+Screen('FillRect', window, backgroundColour);
+Screen('Flip', window);
+
+%Step 6 --> create face fragment textures 
+
+numFaces = size(faceFragments, 1);   %num of faces
+
+numFragments = 4;      %four fragments per face
+
+faceTextures = zeros(numFaces, numFragments);
+completeFaceTextures = zeros(numFaces, 1);
+
+for i = 1:numFaces
+   
+    completeFaceTextures(i) = Screen('MakeTexture', window, ...             %creates texture for the complete face
+                resizedFaces{i});
+
+    for j = 1:numFragments %create texture for 4 fragments
+                  faceTextures(i,j) = Screen('MakeTexture', window, ...
+                      faceFragments{i,j});
+    end
+end
+
+
+%%%%%%%%%% Sim Grid Instructions
+
+
+        simGridInstructions = [ ...
+            'SIMULTANEOUS GRID\n\n' ...
+            'You are about to begin the Simultaneous Grid block. \n\n' ...
+            'Two fragmented faces will appear at the same time.\n ...' ...
+            'All four fragments of each face will be shown together in a grid.\n\n' ...
+            ' After, two complete faces will appear.\n'... 
+            'Choose the face you saw before.\n\n' ...
+            'Press either button to begin'];
+
+        DrawFormattedText(window, simGridInstructions, ...
+            'center', 'center', 255);
+
+        Screen('Flip', window);
+
+        KbReleaseWait(milliKeyIndex);
+
+        while true
+            [keyIsDown, ~, keyCode] = KbChack(milliKeyIndex);
+
+            if keyIsDown && (keyCode(leftKey) || keyCode(rightKey))
+                break;
+            end
+
+            WaitSecs(0.001);
+        end
+        KbReleaseWait(milliKeyIndex);
+            %clear instructions screen before trial
+
+            Screen('FillRect', window, backgroundColour);
+            Screen('Flip', window);
+% Step 7 --> select and raw sim grid study faces
+                           %randomly select two diff. study faces
+
+    studyFaceIdices = randperm(numFaces, 2);
+
+    leftFaceIndex = studyFaceIndices(1);
+    rightFaceIndex = studyFaceIndices(2);
+                        
+                          % draw all four fragments of both study faces
+          for j = 1:numFragments
+
+              %left study face
+          Screen('DrawTexture', window, ...
+              faceTextures(leftFaceIndex, j),[], leftGridRects(j,:));
+
+          %right study face
+
+          Screen('DrawTexture', window, ...
+              faceTextures(rightFaceIndex, j), [], rightGridRects(j,:));
+          end
+
+% Step 8 --> sim presentation timing
+
+simDuration = 0.200;        %200ms stim presentation
+blankDuration = 0.600;       %600 ms bank screen
+
+stimulusOnset = Screen('Flip', window);   %display all four fragments sim
+
+Screen('FillRect', window, backgroundColour);       %prepare blank screen
+
+blankOnset = Screen('Flip', window, ...
+             stimulusOnset + simDuration - 0.5 * ifi);                        %remove the fragment after 200ms
+
+
+% step 9 --> collect participants response
+
+
+        %need at least 3 identities:
+        %2 studied faces + 1 new distractor
+    assert(numFacs >=3, 'At least # different face identities are required.');
+
+    %randomly choose ONE of the two studied faces to be correct answer
+
+    targetFaceIndex = studyFaceIndices(randi(2));
+
+               %choose a new face that was NOT shown during study display
+
+         availableDstractors = setdiff(1:numFaces, studyFaceIndices);
+         distractorFaceIndex = availableDistractors(randi(length(availableDistractors)));
+
+                        % randomly decide whther the correct face appears
+                        % left or right
+
+                      correctResponse = randi(2);
+
+                      if correctResponse == 1
+
+                                %correct face on LEFT
+                                responseLeftFace = targetFaceIndex;
+                                responseRightFace = distractorFaceIndex;
+                      else
+                                 % correct face on right
+                                 responseLeftFace = distractorFaceIndex;
+                                 responseRightFace = targetFaceIndex;
+
+                      end
+
+                 %create rectangles for the two complete response faces
+          fullFaceRect = [0 0 faceWidthPx faceHeightPx];
+
+          leftResponseRect = CenterRectOnPointd(fullFaceRect, ...
+              leftFaceX, leftFaceY);
+
+          rightResponseRect = CenterRectOnPointd(fullFaceRect, ...
+              rightFaceX, rightFaceY);
+
+                       %draw the two complete response faces
+              Screen('DrawTexture', window, ...
+                  completeFaceTextures(responseLeftFace), [], leftResponseRect);
+              Screen('DrawTexture', window, ...
+                  completeFaceTextures(responseRighFace), [], rightResponseRect);
+
+       %show response faces after the 600ms blank interval
+
+       responseOnset = Screen('Flip', window, ...
+           blankOnset + blankDuration - 0.5 * ifi);
+
+                   %wait until buttons released before collecting response
+            KbReleaseWait(milliKeyIndex);
+
+            response = NaN;
+            responseTime = NaN;
+
+           %wait for participant response --> no deadline
+      while isnan(response)
+          [keyIsDown, keyTime, keyCode] = KbCheck(milliKeyIndex);
+
+          if keyisDown
+              if keyCode (leftKey)
+
+                  response = 1;
+                  responseTime = keyTime - responseOnset;
+
+              elseif keyCode(righKey)
+                  
+                  response = 2;
+                  responseTime = keyTime - responseOnset;
+
+              end
+          end
+
+          WaitSecs(0.001);
+      end
+
+                      %calculate accuracy 
+
+         accuracy = double(response == correctResponse);
+
+         %print trial results in matlab
+
+         fprintf('Studied faces: %d and %d\n', ...
+             studyFaceIndices(1), studyFaceIndices(2));
+
+         fprintf('Correct target face: %d\n', targetFaceIndex);
+         fprintf('Distractor face: %d\n', distractorFaceIndex);
+         fprintf('Correct response: %d\n', correctResponse);
+         fprintf('Participant response: %d\n', response);
+         fprintf('Accuracy: %d\n', accuracy);
+         fprintf('Reaction time: %3f seconds\n', responseTime);
+
+                                 
+
+%%%%%%% NEED TO ADD SAVE RESULTS FILE HERE (AND AT THE END OF EACH TRIAL
+%%%%%%% CONDITON!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
+
+
+sca;
+catch ME
+    sca;
+    fprintf('Experiment stopped: %s\n', ME.message);
+    rethrow(ME)
+end
