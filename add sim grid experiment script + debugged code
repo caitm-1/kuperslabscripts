@@ -1,5 +1,6 @@
 
 
+
 clear;
 clc;
 %PsychDefaultSetup(2);
@@ -110,8 +111,8 @@ screenCenterY=display_sz_pix (2)/2;
                         leftFaceX + fragmentOffsetX];
 
            leftGridY = [leftFaceY - fragmentOffsetY, ...
-               leftFaceY + fragmentOffsetY, ...
-               leftFaceY - fragmentOffsetY,...
+               leftFaceY - fragmentOffsetY, ...
+               leftFaceY + fragmentOffsetY,...
                leftFaceY + fragmentOffsetY];
 
                               %Right face -> four fragment centre positions
@@ -121,8 +122,8 @@ screenCenterY=display_sz_pix (2)/2;
              rightFaceX + fragmentOffsetX];
 
              rightGridY = [rightFaceY - fragmentOffsetY, ...
-             rightFaceY + fragmentOffsetY, ...
-             rightFaceY - fragmentOffsetY,...
+             rightFaceY - fragmentOffsetY, ...
+             rightFaceY + fragmentOffsetY,...
              rightFaceY + fragmentOffsetY];
 
 
@@ -159,7 +160,7 @@ screenCenterY=display_sz_pix (2)/2;
                  
   %PsychDefaultSetup(2);                      %initialize psychtoolbox
   %%%%skip test for now bc issue w flips
-  Screen('Preference', 'SkipSyncTests', 1);
+  Screen('Preference', 'SkipSyncTests', 022);
 
   screenNumber = 1;               %select the vpixx monitor
   
@@ -263,7 +264,7 @@ end
         KbReleaseWait(milliKeyIndex);
 
         while true
-            [keyIsDown, ~, keyCode] = KbChack(milliKeyIndex);
+            [keyIsDown, ~, keyCode] = KbCheck(milliKeyIndex);
 
             if keyIsDown && (keyCode(leftKey) || keyCode(rightKey))
                 break;
@@ -277,12 +278,23 @@ end
             Screen('FillRect', window, backgroundColour);
             Screen('Flip', window);
 % Step 7 --> select and raw sim grid study faces
-                           %randomly select two diff. study faces
+                          
 
-    studyFaceIdices = randperm(numFaces, 2);
+
+numTrials = 10;
+for trial = 1:numTrials
+
+      fprintf('\nTrial %d ofd\n', trial, numTrials);
+                                     %randomly select two diff. study faces
+  
+                           
+                           studyFaceIndices = randperm(numFaces, 2);
 
     leftFaceIndex = studyFaceIndices(1);
     rightFaceIndex = studyFaceIndices(2);
+
+              %clear back buffer before drawing study faces
+              Screen('FillRect', window, backgroundColour);
                         
                           % draw all four fragments of both study faces
           for j = 1:numFragments
@@ -296,6 +308,7 @@ end
           Screen('DrawTexture', window, ...
               faceTextures(rightFaceIndex, j), [], rightGridRects(j,:));
           end
+
 
 % Step 8 --> sim presentation timing
 
@@ -315,7 +328,7 @@ blankOnset = Screen('Flip', window, ...
 
         %need at least 3 identities:
         %2 studied faces + 1 new distractor
-    assert(numFacs >=3, 'At least # different face identities are required.');
+    assert(numFaces >=3, 'At least # different face identities are required.');
 
     %randomly choose ONE of the two studied faces to be correct answer
 
@@ -323,8 +336,8 @@ blankOnset = Screen('Flip', window, ...
 
                %choose a new face that was NOT shown during study display
 
-         availableDstractors = setdiff(1:numFaces, studyFaceIndices);
-         distractorFaceIndex = availableDistractors(randi(length(availableDistractors)));
+         availableDistractors = setdiff(1:numFaces, studyFaceIndices);
+         distractorsFaceIndex = availableDistractors(randi(length(availableDistractors)));
 
                         % randomly decide whther the correct face appears
                         % left or right
@@ -335,10 +348,10 @@ blankOnset = Screen('Flip', window, ...
 
                                 %correct face on LEFT
                                 responseLeftFace = targetFaceIndex;
-                                responseRightFace = distractorFaceIndex;
+                                responseRightFace = distractorsFaceIndex;
                       else
                                  % correct face on right
-                                 responseLeftFace = distractorFaceIndex;
+                                 responseLeftFace = distractorsFaceIndex;
                                  responseRightFace = targetFaceIndex;
 
                       end
@@ -356,7 +369,7 @@ blankOnset = Screen('Flip', window, ...
               Screen('DrawTexture', window, ...
                   completeFaceTextures(responseLeftFace), [], leftResponseRect);
               Screen('DrawTexture', window, ...
-                  completeFaceTextures(responseRighFace), [], rightResponseRect);
+                  completeFaceTextures(responseRightFace), [], rightResponseRect);
 
        %show response faces after the 600ms blank interval
 
@@ -373,13 +386,13 @@ blankOnset = Screen('Flip', window, ...
       while isnan(response)
           [keyIsDown, keyTime, keyCode] = KbCheck(milliKeyIndex);
 
-          if keyisDown
+          if keyIsDown
               if keyCode (leftKey)
 
                   response = 1;
                   responseTime = keyTime - responseOnset;
 
-              elseif keyCode(righKey)
+              elseif keyCode(rightKey)
                   
                   response = 2;
                   responseTime = keyTime - responseOnset;
@@ -387,7 +400,7 @@ blankOnset = Screen('Flip', window, ...
               end
           end
 
-          WaitSecs(0.001);
+          
       end
 
                       %calculate accuracy 
@@ -400,13 +413,20 @@ blankOnset = Screen('Flip', window, ...
              studyFaceIndices(1), studyFaceIndices(2));
 
          fprintf('Correct target face: %d\n', targetFaceIndex);
-         fprintf('Distractor face: %d\n', distractorFaceIndex);
+         fprintf('Distractor face: %d\n', distractorsFaceIndex);
          fprintf('Correct response: %d\n', correctResponse);
          fprintf('Participant response: %d\n', response);
          fprintf('Accuracy: %d\n', accuracy);
          fprintf('Reaction time: %3f seconds\n', responseTime);
 
-                                 
+              %make sure response button is released before next trial
+              KbReleaseWait(milliKeyIndex);
+
+              %clear response before next trial
+
+              Screen('FillRect', window, backgroundColour);
+              Screen('Flip', window);
+end
 
 %%%%%%% NEED TO ADD SAVE RESULTS FILE HERE (AND AT THE END OF EACH TRIAL
 %%%%%%% CONDITON!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
