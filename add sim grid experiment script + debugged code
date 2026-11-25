@@ -1,6 +1,3 @@
-
-
-
 clear;
 clc;
 %PsychDefaultSetup(2);
@@ -103,7 +100,7 @@ screenCenterY=display_sz_pix (2)/2;
                 %8 pixel separation between neighboring fragments
     fragmentGapPx = 8;
 
-    framgmentOffsetX = (faceWidthPx / 4) + (fragmentGapPx / 2);
+    fragmentOffsetX = (faceWidthPx / 4) + (fragmentGapPx / 2);
     fragmentOffsetY = (faceHeightPx / 4) + (fragmentGapPx / 2);
 
                                %Left face -> four fragment centre positions
@@ -162,7 +159,7 @@ screenCenterY=display_sz_pix (2)/2;
                  
   %PsychDefaultSetup(2);                      %initialize psychtoolbox
   %%%%skip test for now bc issue w flips
-  Screen('Preference', 'SkipSyncTests', 022);
+  Screen('Preference', 'SkipSyncTests', 0);
 
   screenNumber = 1;               %select the vpixx monitor
   
@@ -197,7 +194,7 @@ rightKey = KbName('2@');
 generalInstructions = [...
     'In this experiment, you will complete four face recognition blocks.\n\n'...
     'There are two presentation types: SIMULTANEOUS and SEQUENTIAL.\n\n'...
-    'Each presentation type has two conditions: GRID and RANDOMIZED. \n\n ...' ...
+    'Each presentation type has two conditions: GRID and RANDOMIZED. \n\n' ...
     'In each trial, you will study two fragmented faces. \n\n'...
     'After, two complete faces will appear.\n' ...
     'One face was shown before and one face is new. \n\n' ...
@@ -282,7 +279,7 @@ end
 % Step 7 --> select and raw sim grid study faces
                                                                                %add fixation between the stimulus faces
 fixationSize = 10;
-fixationWidth = 3;
+fixationLineWidth = 3;
 fixationColour = 255;
 
          fixationCoords = [-fixationSize fixationSize 0 0; ...
@@ -291,7 +288,7 @@ fixationColour = 255;
 numTrials = 10;
 for trial = 1:numTrials
 
-      fprintf('\nTrial %d ofd\n', trial, numTrials);
+      fprintf('\nTrial %d of d\n', trial, numTrials);
                                      %randomly select two diff. study faces
   
                            
@@ -340,7 +337,7 @@ blankOnset = Screen('Flip', window, ...
 
         %need at least 3 identities:
         %2 studied faces + 1 new distractor
-    assert(numFaces >=3, 'At least # different face identities are required.');
+    assert(numFaces >=3, 'At least 3 different face identities are required.');
 
     %randomly choose ONE of the two studied faces to be correct answer
 
@@ -388,17 +385,23 @@ blankOnset = Screen('Flip', window, ...
               Screen('TextSize', window, 32);                                          %response screen questions and labels
 
 
-       DrawFormattedText(window, ...
-           'Which of these faces was one of the faces you just saw?', ...
-           'center', 150, 255);
+              %response question
+        DrawFormattedText(window,...
+            'Which of these faces was one of the faces you just saw?', ...
+            'center', 150, 255);
 
-       DrawFormattedText(window, ...
-           'LEFT', ...
-           leftFaceX- 40, leftResponseRect(4)+ 40, 255);
-       DrawFormattedText(window, ...)
-           'RIGHT', ...
-           rightFaceX - 50, rightResponseRect(4)+ 40, 255);
-       
+    leftBounds = Screen('TextBounds', window, 'LEFT');
+    leftLabelX = leftFaceX - RectWidth(leftBounds)/2;                            %formats response text to be under the face image response
+
+    rightBounds = Screen('TextBounds', window, 'RIGHT');
+    rightLabelX = rightFaceX - RectWidth(rightBounds)/2;
+
+    DrawFormattedText(window, ...
+        'LEFT', ...
+        leftLabelX, leftResponseRect(4) +40, 255);
+    DrawFormattedText(window, ...
+        'RIGHT', ...
+        rightLabelX, rihtResponseRect(4) + 40, 255);
        
        %show response faces after the 600ms blank interval
 
