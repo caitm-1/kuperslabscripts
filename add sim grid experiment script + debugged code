@@ -100,9 +100,11 @@ screenCenterY=display_sz_pix (2)/2;
 
  % Step 3 - SIM GRID position 
 
- fragmentOffsetX = faceWidthPx / 4;                                        %calc horizontal and vertical offsets, from each face centre to each fragment centre                              
- fragmentOffsetY = faceHeightPx / 4;
+                %8 pixel separation between neighboring fragments
+    fragmentGapPx = 8;
 
+    framgmentOffsetX = (faceWidthPx / 4) + (fragmentGapPx / 2);
+    fragmentOffsetY = (faceHeightPx / 4) + (fragmentGapPx / 2);
 
                                %Left face -> four fragment centre positions
            leftGridX = [leftFaceX - fragmentOffsetX, ...
@@ -195,7 +197,7 @@ rightKey = KbName('2@');
 generalInstructions = [...
     'In this experiment, you will complete four face recognition blocks.\n\n'...
     'There are two presentation types: SIMULTANEOUS and SEQUENTIAL.\n\n'...
-    'Each presentation type has two conditions: GRID and RANDOMIZED. \n\n ...' 
+    'Each presentation type has two conditions: GRID and RANDOMIZED. \n\n ...' ...
     'In each trial, you will study two fragmented faces. \n\n'...
     'After, two complete faces will appear.\n' ...
     'One face was shown before and one face is new. \n\n' ...
@@ -250,7 +252,7 @@ end
         simGridInstructions = [ ...
             'SIMULTANEOUS GRID\n\n' ...
             'You are about to begin the Simultaneous Grid block. \n\n' ...
-            'Two fragmented faces will appear at the same time.\n ...' 
+            'Two fragmented faces will appear at the same time.\n ...' ...
             'All four fragments of each face will be shown together in a grid.\n\n' ...
             ' After, two complete faces will appear.\n'... 
             'Choose the face you saw before.\n\n' ...
@@ -278,8 +280,13 @@ end
             Screen('FillRect', window, backgroundColour);
             Screen('Flip', window);
 % Step 7 --> select and raw sim grid study faces
-                          
+                                                                               %add fixation between the stimulus faces
+fixationSize = 10;
+fixationWidth = 3;
+fixationColour = 255;
 
+         fixationCoords = [-fixationSize fixationSize 0 0; ...
+                                   0 0 -fixationSize fixationSize];
 
 numTrials = 10;
 for trial = 1:numTrials
@@ -308,7 +315,12 @@ for trial = 1:numTrials
           Screen('DrawTexture', window, ...
               faceTextures(rightFaceIndex, j), [], rightGridRects(j,:));
           end
+                     
 
+
+                                                  % Draw fixation between the two study faces during presentation
+              Screen('DrawLines', window, fixationCoords, fixationLineWidth, ...
+                  fixationColour, [screenCenterX, screenCenterY], 2);
 
 % Step 8 --> sim presentation timing
 
@@ -371,6 +383,23 @@ blankOnset = Screen('Flip', window, ...
               Screen('DrawTexture', window, ...
                   completeFaceTextures(responseRightFace), [], rightResponseRect);
 
+                                                                                    
+
+              Screen('TextSize', window, 32);                                          %response screen questions and labels
+
+
+       DrawFormattedText(window, ...
+           'Which of these faces was one of the faces you just saw?', ...
+           'center', 150, 255);
+
+       DrawFormattedText(window, ...
+           'LEFT', ...
+           leftFaceX- 40, leftResponseRect(4)+ 40, 255);
+       DrawFormattedText(window, ...)
+           'RIGHT', ...
+           rightFaceX - 50, rightResponseRect(4)+ 40, 255);
+       
+       
        %show response faces after the 600ms blank interval
 
        responseOnset = Screen('Flip', window, ...
@@ -442,4 +471,3 @@ catch ME
     fprintf('Experiment stopped: %s\n', ME.message);
     rethrow(ME)
 end
-
