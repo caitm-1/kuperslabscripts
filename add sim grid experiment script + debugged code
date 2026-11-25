@@ -1,3 +1,6 @@
+
+
+
 clear;
 clc;
 %PsychDefaultSetup(2);
@@ -198,8 +201,9 @@ generalInstructions = [...
     'In each trial, you will study two fragmented faces. \n\n'...
     'After, two complete faces will appear.\n' ...
     'One face was shown before and one face is new. \n\n' ...
-    'Choose the face you saw before.\n\n'...
-    'Press either left or right buttons to continue'];
+    'Choose the face you saw in the trial before.\n\n'...
+    'Press either left or right buttons to continue'...
+    'Try to respond as fast as possible'];
 DrawFormattedText(window, generalInstructions, ...
     'center', 'center', 255);
 
@@ -252,8 +256,9 @@ end
             'Two fragmented faces will appear at the same time.\n ...' ...
             'All four fragments of each face will be shown together in a grid.\n\n' ...
             ' After, two complete faces will appear.\n'... 
-            'Choose the face you saw before.\n\n' ...
-            'Press either button to begin'];
+            'Choose the face you saw in the trial before.\n\n' ...          
+            'Press either button to begin'...
+            'Try to respond as fast as possible'];
 
         DrawFormattedText(window, simGridInstructions, ...
             'center', 'center', 255);
@@ -317,7 +322,7 @@ for trial = 1:numTrials
 
                                                   % Draw fixation between the two study faces during presentation
               Screen('DrawLines', window, fixationCoords, fixationLineWidth, ...
-                  fixationColour, [screenCenterX, screenCenterY], 2);
+                  fixationColour, [screenCenterX, screenCenterY], 0);
 
 % Step 8 --> sim presentation timing
 
@@ -401,7 +406,7 @@ blankOnset = Screen('Flip', window, ...
         leftLabelX, leftResponseRect(4) +40, 255);
     DrawFormattedText(window, ...
         'RIGHT', ...
-        rightLabelX, rihtResponseRect(4) + 40, 255);
+        rightLabelX, rightResponseRect(4) + 40, 255);
        
        %show response faces after the 600ms blank interval
 
@@ -459,6 +464,230 @@ blankOnset = Screen('Flip', window, ...
               Screen('FillRect', window, backgroundColour);
               Screen('Flip', window);
 end
+
+
+%% simultaneous random trial
+
+                                %%Instructions 
+
+
+                                simRANDInstructions = [ ...
+                                    'SIMULTANEOUS RANDOM\n\n' ...
+                                    'You are about to begin the Simultaneous RANDOM block. \n\n' ...
+                                    'Two fragmented faces will appear at the same time.\n' ...
+                                    'All four fragments of each face will be shown together in a random organization.\n\n' ...
+                                    ' After, two complete faces will appear.\n'... 
+                                    'Choose the face you saw in the trial before.\n\n' ...          
+                                    'Press either button to begin'...
+                                    'Try to respond as fast as possible'];
+
+                               
+                                DrawFormattedText(window, simGridInstructions, ...
+                                    'center', 'center', 255);
+
+                                Screen('Flip', window);
+                        % Keyboard response 
+
+KbReleaseWait(milliKeyIndex);
+while true
+    [keyIsDown, ~, keyCode] = KbCheck(milliKeyIndex);
+    if keyIsDown && (keyCode(leftKey) || keyCode(rightKey))
+        break;
+    end
+    WaitSecs(0.001);
+end
+KbReleaseWait(milliKeyIndex);
+Screen('FillRect', window, backgroundColour);
+Screen('Flip', window);
+
+%sim RANDOM trials
+for trial = 1:numTrials
+    fprintf('\nSIM Random Trial %d of %d\n', trial, numTrials);
+     % randomly choose two different study faces studyFAceIndices =
+     % randperm(numFaces, 2);
+
+     leftFaceIndez = studyFaceIndices(1);
+     rightFacesIndex = studyFaceIndices(2);
+
+     %independently randomize fragment positions for each face
+     leftRandomOrder = randperm(numFragments);
+     rightRandomOrder = randperm(numFragments);
+
+     Screen('FillRect', window, backgroundColour);
+     for j = 1:numFragments
+
+         %Put a randomized LEFT-face fragment into grid position j 
+         Screen('DrawTexture', window, faceTextures (leftFaceIndex, leftRandomOrder(j)), [], leftGridRects(j,:));
+
+         %Put a randomized RIGHT-face fragment into grid position j
+Screen('DrawTexture',window,faceTextures(rightFaceIndex,rightRandomOrder (j)),[],rightGridRects(j,:));
+     end
+
+     %fixation between study faces 
+
+   Screen('DrawLines', window, fixationCoords, fixationLineWidth, fixationColour, [screenCenterX, screenCenterY], 0);
+
+
+   simDuration = 0.200;        %200ms stim presentation
+   blankDuration = 0.600;       %600 ms bank screen
+
+   stimulusOnset = Screen('Flip', window);   %display all four fragments sim
+
+   Screen('FillRect', window, backgroundColour);       %prepare blank screen
+
+   blankOnset = Screen('Flip', window, ...
+       stimulusOnset + simDuration - 0.5 * ifi);                        %remove the fragment after 200ms
+
+
+        %need at least 3 identities:
+                                                                             %2 studied faces + 1 new distractor
+    assert(numFaces >=3, 'At least 3 different face identities are required.');
+
+    %randomly choose ONE of the two studied faces to be correct answer
+
+    targetFaceIndex = studyFaceIndices(randi(2));
+
+               %choose a new face that was NOT shown during study display
+
+         availableDistractors = setdiff(1:numFaces, studyFaceIndices);
+         distractorsFaceIndex = availableDistractors(randi(length(availableDistractors)));
+
+                        % randomly decide whther the correct face appears
+                        % left or right
+
+                      correctResponse = randi(2);
+
+      if correctResponse == 1
+
+                                %correct face on LEFT
+                                responseLeftFace = targetFaceIndex;
+                                responseRightFace = distractorsFaceIndex;
+                      else
+                                 % correct face on right
+                                 responseLeftFace = distractorsFaceIndex;
+                                 responseRightFace = targetFaceIndex;
+
+                     end
+
+                 %create rectangles for the two complete response faces
+          fullFaceRect = [0 0 faceWidthPx faceHeightPx];
+
+          leftResponseRect = CenterRectOnPointd(fullFaceRect, ...
+              leftFaceX, leftFaceY);
+
+          rightResponseRect = CenterRectOnPointd(fullFaceRect, ...
+              rightFaceX, rightFaceY);
+
+                       %draw the two complete response faces
+              Screen('DrawTexture', window, ...
+                  completeFaceTextures(responseLeftFace), [], leftResponseRect);
+              Screen('DrawTexture', window, ...
+                  completeFaceTextures(responseRightFace), [], rightResponseRect);
+
+                                                                                    
+
+              Screen('TextSize', window, 32);                                          %response screen questions and labels
+
+
+              %response question
+        DrawFormattedText(window,...
+            'Which of these faces was one of the faces you just saw?', ...
+            'center', 150, 255);
+
+    leftBounds = Screen('TextBounds', window, 'LEFT');
+    leftLabelX = leftFaceX - RectWidth(leftBounds)/2;                            %formats response text to be under the face image response
+
+    rightBounds = Screen('TextBounds', window, 'RIGHT');
+    rightLabelX = rightFaceX - RectWidth(rightBounds)/2;
+
+    DrawFormattedText(window, ...
+        'LEFT', ...
+        leftLabelX, leftResponseRect(4) +40, 255);
+    DrawFormattedText(window, ...
+        'RIGHT', ...
+        rightLabelX, rightResponseRect(4) + 40, 255);
+       
+       %show response faces after the 600ms blank interval
+
+       responseOnset = Screen('Flip', window, ...
+           blankOnset + blankDuration - 0.5 * ifi);
+
+                   %wait until buttons released before collecting response
+            KbReleaseWait(milliKeyIndex);
+
+            response = NaN;
+            responseTime = NaN;
+
+           %wait for participant response --> no deadline
+      while isnan(response)
+          [keyIsDown, keyTime, keyCode] = KbCheck(milliKeyIndex);
+
+          if keyIsDown
+              if keyCode (leftKey)
+
+                  response = 1;
+                  responseTime = keyTime - responseOnset;
+
+              elseif keyCode(rightKey)
+                  
+                  response = 2;
+                  responseTime = keyTime - responseOnset;
+
+              end
+          end
+
+          
+      end
+
+                      %calculate accuracy 
+
+         accuracy = double(response == correctResponse);
+
+         %print trial results in matlab
+
+         fprintf('Studied faces: %d and %d\n', ...
+             studyFaceIndices(1), studyFaceIndices(2));
+
+         fprintf('Correct target face: %d\n', targetFaceIndex);
+         fprintf('Distractor face: %d\n', distractorsFaceIndex);
+         fprintf('Correct response: %d\n', correctResponse);
+         fprintf('Participant response: %d\n', response);
+         fprintf('Accuracy: %d\n', accuracy);
+         fprintf('Reaction time: %3f seconds\n', responseTime);
+
+              %make sure response button is released before next trial
+              KbReleaseWait(milliKeyIndex);
+
+              %clear response before next trial
+
+              Screen('FillRect', window, backgroundColour);
+              Screen('Flip', window);
+end
+
+
+
+
+
+
+%%NEXT ADD SEQ TRIALS
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 %%%%%%% NEED TO ADD SAVE RESULTS FILE HERE (AND AT THE END OF EACH TRIAL
 %%%%%%% CONDITON!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
